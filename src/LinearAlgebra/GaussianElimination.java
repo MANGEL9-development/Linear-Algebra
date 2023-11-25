@@ -28,6 +28,6 @@ public class GaussianElimination{
     // TODO: document this
     private static Matrix generateMatrix(int rows,int columns,boolean addAugmentedColumn){
         // TODO: implement this
-        return new int[rows][columns];
+        return new Matrix(rows,columns);
     }
 }
