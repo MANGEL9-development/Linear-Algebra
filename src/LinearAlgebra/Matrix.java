@@ -6,6 +6,8 @@ import LinearAlgebra.Exceptions.IndeterminableMatrixException;
 import java.util.Arrays;
 
 /**
+ * This class represents a matrix. This class is immutable, so any operations done with this
+ * matrix will create and return a new matrix.
  * @author Mark Angelot
  * @since August 30, 2023
  */
@@ -50,11 +52,39 @@ public class Matrix{
      * @param columns the amount of columns in the matrix
      */
     public Matrix(int rows, int columns, int augmentIndex){
+        if(rows<1 || columns<1){
+            throw new IllegalArgumentException("Matrix must have positive, nonzero dimensions");
+        }
         matrixArray=new int[rows][columns];
         AUGMENT_INDEX=augmentIndex;
         IS_AUGMENTED=isAugmented();
         AMOUNT_OF_ROWS=rows;
         AMOUNT_OF_COLUMNS=columns;
+    }
+
+    public Matrix(int[][] matrixArray){
+        if(Arrays.deepEquals(matrixArray,new int[][]{})){
+            throw new IllegalArgumentException("Matrix cannot be empty");
+        }
+        for(int i=0,length=matrixArray[0].length;i<matrixArray.length;i++){
+            if(matrixArray[i].length!=length){
+                throw new IllegalArgumentException("Rows of matrix must be of the same length");
+            }
+            length=matrixArray[i].length;
+        }
+        this.matrixArray=matrixArray.clone();
+        AUGMENT_INDEX=-1;
+        IS_AUGMENTED=isAugmented();
+        AMOUNT_OF_ROWS=matrixArray.length;
+        AMOUNT_OF_COLUMNS=matrixArray[0].length;
+    }
+
+    public Matrix(Matrix matrix){
+        matrixArray=matrix.matrixArray.clone();
+        AUGMENT_INDEX=matrix.AUGMENT_INDEX;
+        IS_AUGMENTED=matrix.isAugmented();
+        AMOUNT_OF_ROWS=matrix.AMOUNT_OF_ROWS;
+        AMOUNT_OF_COLUMNS=matrix.AMOUNT_OF_ROWS;
     }
 
     public static Matrix generateRandomMatrix(int rows,int columns){
@@ -99,7 +129,7 @@ public class Matrix{
      * @param row the row in which the new entry will go
      * @param column the column in which the new entry will go
      */
-    public void setEntry(int newValue,int row,int column){
+    private void setEntry(int newValue,int row,int column){
         matrixArray[row][column]=newValue;
     }
 
@@ -190,7 +220,15 @@ public class Matrix{
     }
 
     private void createPivots(){
-        // TODO: check to see if it's a good idea to swap rows
+        int beginningIndexOfTrivialSolutions=AMOUNT_OF_ROWS;
+        /* When a row only has 0's, it is to be moved to the end by swapping it with the last
+        non-trivial row */
+        // TODO: maybe write code to check to see if it's a good idea to swap rows
+
+        for(int i=0;i<AMOUNT_OF_ROWS;i++){
+            //TODO: finish this
+        }
+
         for(int row=0;row<AMOUNT_OF_ROWS;row++){
             for(int column=0;column<row;column++){
                 if(matrixArray[row][column]!=0){
@@ -201,7 +239,17 @@ public class Matrix{
                 the first nonzero number */
         }
     }
+/*
 
+ 1. Make sure the matrix isn't just 0's
+    - Maybe sort the matrix in order of the least to greatest first number
+    - Keep track of the first nonzero column
+ 2. Starting from the first nonzero column, move diagonally from top-left to bottom-right to make
+    pivots.
+    - Every time a row operation is done (replacing a row with itself added to a factor of another
+      row
+
+ */
     private void clearColumns(){
         // TODO: implement this
     }
@@ -266,9 +314,60 @@ public class Matrix{
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Creates and returns the transpose of this matrix. The transpose of a matrix is a matrix
+     * whose columns match the rows of that matrix.
+     * @return
+     */
+    public Matrix transpose(){
+        Matrix newMatrix=new Matrix(AMOUNT_OF_COLUMNS,AMOUNT_OF_ROWS);
+        for(int i=0;i<AMOUNT_OF_ROWS;i++){
+            for(int j=0;j<AMOUNT_OF_COLUMNS;j++){
+                newMatrix.matrixArray[j][i]=this.matrixArray[i][j];
+            }
+        }
+        return newMatrix;
+    }
+
     public int[] eigenvalues(){
         // TODO: implement this
         throw new UnsupportedOperationException();
+    }
+
+    public Vector[] eigenvectors(){
+        // TODO: implement this
+        throw new UnsupportedOperationException();
+    }
+
+//--Operations--//
+
+    /**
+     * Creates and returns a matrix which is the sum of this matrix and another matrix
+     * @param matrix the matrix that is to be added to this matrix
+     * @return a matrix which is the sum of this matrix and another matrix
+     */
+    public Matrix plus(Matrix matrix){
+        Matrix newMatrix=new Matrix(AMOUNT_OF_ROWS,AMOUNT_OF_COLUMNS);
+        for(int i=0;i<AMOUNT_OF_ROWS;i++){
+            for(int j=0;j<AMOUNT_OF_COLUMNS;j++){
+                newMatrix.matrixArray[i][j]=(this.matrixArray[i][j]+matrix.matrixArray[i][j]);
+            }
+        }
+        return newMatrix;
+    }
+    /**
+     * Creates and returns a matrix which is the difference of this matrix and another matrix
+     * @param matrix the matrix that is to be subtracted from this matrix
+     * @return a matrix which is the difference of this matrix and another matrix
+     */
+    public Matrix minus(Matrix matrix){
+        Matrix newMatrix=new Matrix(AMOUNT_OF_ROWS,AMOUNT_OF_COLUMNS);
+        for(int i=0;i<AMOUNT_OF_ROWS;i++){
+            for(int j=0;j<AMOUNT_OF_COLUMNS;j++){
+                newMatrix.matrixArray[i][j]=(this.matrixArray[i][j]-matrix.matrixArray[i][j]);
+            }
+        }
+        return newMatrix;
     }
 
     public Matrix crossMultiplyBy(Matrix matrix) throws IncompatibleMatrixMultiplicationException{
@@ -318,4 +417,48 @@ public class Matrix{
     public String getDimensions(){
         return ""+AMOUNT_OF_ROWS+'×'+AMOUNT_OF_COLUMNS;
     }
+
+//--Row Operations--//
+
+    /**
+     * Creates and returns a new matrix with the row at {@code index1} swapped with the row at
+     * {@code index2}
+     * @param index1 the index of the row that will be swapped with the row at {@code index2}
+     * @param index2 the index of the row that will be swapped with the row at {@code index1}
+     * @returna new matrix with the row at {@code index1} swapped with the row at {@code index2}
+     */
+    public Matrix swapRows(int index1,int index2){
+        Matrix newMatrix=new Matrix(this);
+        int[] row1=newMatrix.matrixArray[index1];
+        int[] row2=newMatrix.matrixArray[index2];
+        int[] temp=row2;
+
+        row2=row1;
+        row1=temp;
+
+        newMatrix.matrixArray[index2]=row2;
+        newMatrix.matrixArray[index1]=row1;
+
+        return newMatrix;
+    }
+
+    /**
+     * Creates and returns a new matrix in which the specified row is scaled by a factor.
+     * @param rowIndex the index of the row that will be scaled by the passed factor
+     * @param factor the factor by which the row at the passed index will be scaled
+     * @return a new matrix in which the specified row is scaled by a factor.
+     */
+    public Matrix scaleRow(int rowIndex,int factor){
+        Matrix newMatrix=new Matrix(this);
+        for(int i=0;i<AMOUNT_OF_COLUMNS;i++){
+            newMatrix.matrixArray[rowIndex][i]*=factor;
+        }
+        return newMatrix;
+    }
 }
+
+/*
+    Future Goals:
+        - Make this class support entries as doubles instead of just integers
+
+ */
