@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 /**
  * This class represents a matrix. This class is immutable, so any operations done with this
- * matrix will create and return a new matrix.
+ * matrix is to create and return a new matrix.
  * @author Mark Angelot
  * @since August 30, 2023
  */
@@ -33,6 +33,7 @@ public class Matrix{
      * Constructs an empty unaugmented array with the specified size.
      * @param rows the amount of rows in the matrix
      * @param columns the amount of columns in the matrix
+     * @throws IllegalArgumentException if {@code rows} or {@code columns} is negative or zero
      */
     public Matrix(int rows, int columns){
         if(rows<1 || columns<1){
@@ -50,6 +51,7 @@ public class Matrix{
      * Constructs an empty augmented array with the specified size.
      * @param rows the amount of rows in the matrix
      * @param columns the amount of columns in the matrix
+     * @param augmentIndex the index after which the augmentation begins
      */
     public Matrix(int rows, int columns, int augmentIndex){
         if(rows<1 || columns<1){
@@ -79,6 +81,10 @@ public class Matrix{
         AMOUNT_OF_COLUMNS=matrixArray[0].length;
     }
 
+    /**
+     * Constructs a new Matrix that is an exact copy of another matrix
+     * @param matrix the matrix that is to be copied into this new Matrix
+     */
     public Matrix(Matrix matrix){
         matrixArray=matrix.matrixArray.clone();
         AUGMENT_INDEX=matrix.AUGMENT_INDEX;
@@ -87,10 +93,54 @@ public class Matrix{
         AMOUNT_OF_COLUMNS=matrix.AMOUNT_OF_ROWS;
     }
 
+    /**
+     * Constructs a matrix out of vectors. Each vector is to become a column of this Matrix.
+     * @param vectors an array of vectors that are to become the columns of this Matrix
+     * @throws IllegalArgumentException if the vectors do not all have the same height
+     */
+    public Matrix(Vector... vectors){
+        final int VECTOR0_HEIGHT=vectors[0].AMOUNT_OF_ROWS; // this is recorded to make sure that
+            // every vector has the same height
+        matrixArray=new int[VECTOR0_HEIGHT][vectors.length];
+        for(int i=0;i<vectors.length;i++){
+            if(vectors[i].AMOUNT_OF_ROWS!=VECTOR0_HEIGHT){
+                throw new IllegalArgumentException("All vectors must have the same height");
+            }
+            for(int j=0;j<VECTOR0_HEIGHT;j++){
+                matrixArray[j][i]=vectors[i].getEntry(j);
+            }
+        }
+        AUGMENT_INDEX=-1;
+        IS_AUGMENTED=false;
+        // TODO: create another constructor like this that allows for
+        //  augmentation
+        AMOUNT_OF_ROWS=VECTOR0_HEIGHT;
+        AMOUNT_OF_COLUMNS=vectors.length;
+    }
+
     public static Matrix generateRandomMatrix(int rows,int columns){
         Matrix newMatrix=new Matrix(rows,columns);
         newMatrix.randomizeEntries();
         return newMatrix;
+    }
+
+    // TODO: document this
+
+    /**
+     * Creates and returns an identity matrix of a specified size. An identity matrix is a matrix
+     * with ones on the main diagonal and zeroes everywhere else. Because identity matrices are
+     * always square, the dimension parameter will set both the width amount of rows and the amount
+     * of columns.
+     * @param dimension the amount of rows and columns in this matrix
+     * @return an identity matrix of the specified size
+     * @throws IllegalArgumentException if {@code dimension} is negative or zero
+     */
+    public static Matrix identityMatrix(int dimension){
+        Matrix matrix=new Matrix(dimension,dimension);
+        for(int i=0;i<dimension;i++){
+            matrix.matrixArray[i][i]=1;
+        }
+        return matrix;
     }
 
 //--Getters and Setters--//
@@ -126,8 +176,8 @@ public class Matrix{
     /**
      * Sets an entry in the matrix to a new value
      * @param newValue the new value to be in the specified row and column.
-     * @param row the row in which the new entry will go
-     * @param column the column in which the new entry will go
+     * @param row the row in which the new entry is to go
+     * @param column the column in which the new entry is to go
      */
     private void setEntry(int newValue,int row,int column){
         matrixArray[row][column]=newValue;
@@ -182,10 +232,19 @@ public class Matrix{
 
     /**
      * A matrix is square if it has the same number of rows and columns.
-     * @return if this matrix is square, or false otherwise
+     * @return true if this matrix is square, or false otherwise
      */
     public boolean isSquare(){
         return (AMOUNT_OF_ROWS==AMOUNT_OF_COLUMNS);
+    }
+
+    /**
+     * A symmetric matrix is one whose entry at a,b is equal to its entry at b,a for all a,b in
+     * the matrix. If a matrix is equal to its transpose, then it is symmetric.
+     * @return true if this matrix is symmetric, or false otherwise
+     */
+    public boolean isSymmetric(){
+        return this.equals(this.transpose());
     }
 
     /**
@@ -288,7 +347,7 @@ public class Matrix{
      * @param row the index of the row in the original matrix that isn't to be in the new matrix
      * @param column the index of the column in the original matrix that isn't to be in the new
      *               matrix
-     * @return a new matrix that doesn't include the passed row and column. The new matrix will
+     * @return a new matrix that doesn't include the passed row and column. The new matrix is to
      * have a dimension whose width and height are 1 less than the original matrix.
      */
     private Matrix removeRowAndColumn(int row,int column){
@@ -423,8 +482,8 @@ public class Matrix{
     /**
      * Creates and returns a new matrix with the row at {@code index1} swapped with the row at
      * {@code index2}
-     * @param index1 the index of the row that will be swapped with the row at {@code index2}
-     * @param index2 the index of the row that will be swapped with the row at {@code index1}
+     * @param index1 the index of the row that is to be swapped with the row at {@code index2}
+     * @param index2 the index of the row that is to be swapped with the row at {@code index1}
      * @returna new matrix with the row at {@code index1} swapped with the row at {@code index2}
      */
     public Matrix swapRows(int index1,int index2){
@@ -444,8 +503,8 @@ public class Matrix{
 
     /**
      * Creates and returns a new matrix in which the specified row is scaled by a factor.
-     * @param rowIndex the index of the row that will be scaled by the passed factor
-     * @param factor the factor by which the row at the passed index will be scaled
+     * @param rowIndex the index of the row that is to be scaled by the passed factor
+     * @param factor the factor by which the row at the passed index is to be scaled
      * @return a new matrix in which the specified row is scaled by a factor.
      */
     public Matrix scaleRow(int rowIndex,int factor){

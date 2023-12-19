@@ -1,10 +1,12 @@
 package LinearAlgebra.Exceptions;
 
 /**
+ * This exception is thrown when an attempt is made to calculate the determinants of a matrix that
+ * does not have determinants. Only square matrices have determinants.
  * @author Mark Angelot
  * @since November 24, 2023
  */
-public class IndeterminableMatrixException extends Exception{
+public class IndeterminableMatrixException extends NonSquareMatrixException{
     /**
      * Constructs a IndeterminableMatrixException
      */
