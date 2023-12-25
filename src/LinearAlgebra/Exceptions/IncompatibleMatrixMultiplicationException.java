@@ -11,14 +11,14 @@ import LinearAlgebra.Matrix;
 public class IncompatibleMatrixMultiplicationException extends Exception{
     //Maybe make this a runtime exception
     /**
-     * Constructs a IncompatibleMatrixMultiplicationException
+     * Constructs an IncompatibleMatrixMultiplicationException
      */
     public IncompatibleMatrixMultiplicationException(){
         super();
     }
 
     /**
-     * Constructs a IncompatibleMatrixMultiplicationException with a message
+     * Constructs an IncompatibleMatrixMultiplicationException with a message
      * @param message the detail message. The detail message is saved for later retrieval by the
      *                getMessage() method.
      */

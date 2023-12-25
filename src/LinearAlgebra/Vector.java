@@ -27,6 +27,10 @@ public class Vector extends Matrix{
         super(height,1);
     }
 
+    /**
+     * @param index the index at which to find the entry
+     * @return the entry at the passed index
+     */
     public int getEntry(int index){
         return matrixArray[index][0];
     }
@@ -50,15 +54,34 @@ public class Vector extends Matrix{
      * @return true if the vectors are orthogonal, or false otherwise.
      */
     public boolean isOrthogonalTo(Vector vector){
+        return (dotProduct(vector)==0);
+    }
+
+    /**
+     * @param vector the vector with which to multiply this vector
+     * @return the dot product of this vector and the passed vector.
+     */
+    public int dotProduct(Vector vector){
         if(this.AMOUNT_OF_ROWS!= vector.AMOUNT_OF_ROWS){
-            throw new IllegalArgumentException("The two vectors must be of the same dimension");
-            // ^ this might should be worded better
+            throw new IllegalArgumentException("Two vectors can only be multiplied if they have " +
+                    "the same dimension");
         }
         int sum=0;
         for(int i=0;i<vector.AMOUNT_OF_ROWS;i++){
             sum+=this.getEntry(i)*vector.getEntry(i);
         }
-        return (sum==0);
+        return sum;
+    }
+
+    /**
+     * @return an array with all the entries in this vector from top to bottom
+     */
+    public int[] asArray(){
+        int[] array=new int[this.AMOUNT_OF_ROWS];
+        for(int i=0;i<array.length;i++){
+            array[i]=getEntry(i);
+        }
+        return array;
     }
 
     // TODO: make a method that calculates and returns a projection onto another Vector

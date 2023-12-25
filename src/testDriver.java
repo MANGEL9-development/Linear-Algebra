@@ -1,5 +1,7 @@
+import LinearAlgebra.Exceptions.IncompatibleMatrixAugmentationException;
 import LinearAlgebra.Exceptions.IndeterminableMatrixException;
 import LinearAlgebra.Matrix;
+import LinearAlgebra.Vector;
 
 /**
  * @author Mark Angelot
@@ -7,7 +9,7 @@ import LinearAlgebra.Matrix;
  */
 public class testDriver{
     public static void main(String[] args){
-        testSwappingRows();
+        testSubmatrix();
     }
 
     private static void testDeterminant(){
@@ -38,5 +40,29 @@ public class testDriver{
         });
         System.out.println("Original Matrix:\n"+matrix);
         System.out.println("Matrix with second and third rows swapped:\n"+matrix.swapRows(1,2));
+    }
+
+    private static void testDiagonalMatrix(){
+        try{
+            System.out.println(
+                Matrix
+                    .generateDiagonalMatrix(new Vector(1,2,3,4,5))
+                    .augmentedWith(
+                        Matrix.generateIdentityMatrix(5)
+                    )
+            );
+        }
+        catch(IncompatibleMatrixAugmentationException e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void testSubmatrix(){
+        Matrix matrix=new Matrix(new int[][]{
+                new int[]{1, 2, 3, 4, 5},
+                new int[]{6, 7, 8, 9, 10},
+                new int[]{11,12,13,14,15}
+        });
+        System.out.println(matrix.submatrix(1,1,3,5));
     }
 }

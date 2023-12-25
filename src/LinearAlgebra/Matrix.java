@@ -1,7 +1,9 @@
 package LinearAlgebra;
 
+import LinearAlgebra.Exceptions.IncompatibleMatrixAugmentationException;
 import LinearAlgebra.Exceptions.IncompatibleMatrixMultiplicationException;
 import LinearAlgebra.Exceptions.IndeterminableMatrixException;
+import LinearAlgebra.Exceptions.UninvertibleMatrixException;
 
 import java.util.Arrays;
 
@@ -118,13 +120,41 @@ public class Matrix{
         AMOUNT_OF_COLUMNS=vectors.length;
     }
 
+    /**
+     * Creates and returns a matrix of a given size in which each entry is set to a random number
+     * @param rows the amount of rows in this matrix
+     * @param columns the amount of columns in this matrix
+     * @return a matrix of a given size where each entry is set to a random number
+     */
     public static Matrix generateRandomMatrix(int rows,int columns){
         Matrix newMatrix=new Matrix(rows,columns);
         newMatrix.randomizeEntries();
         return newMatrix;
     }
 
-    // TODO: document this
+    /**
+     * Creates and returns a diagonal matrix from the passed entries
+     * @param entries these values will be put on the main diagonal, with the first entry in the
+     *                top-left corner and the last entry in the bottom-right corner
+     * @return a diagonal matrix from the given entries
+     */
+    public static Matrix generateDiagonalMatrix(int... entries){
+        Matrix newMatrix=new Matrix(entries.length,entries.length);
+        for(int i=0;i<entries.length;i++){
+            newMatrix.matrixArray[i][i]=entries[i];
+        }
+        return newMatrix;
+    }
+
+    /**
+     * Creates and returns a diagonal matrix from the entries from the passed vector
+     * @param vector the entries from this vector will be put on the main diagonal, with the first
+     *               entry in the top-left corner and the last entry in the bottom-right corner
+     * @return a diagonal matrix from the entries from the passed vector
+     */
+    public static Matrix generateDiagonalMatrix(Vector vector){
+        return generateDiagonalMatrix(vector.asArray());
+    }
 
     /**
      * Creates and returns an identity matrix of a specified size. An identity matrix is a matrix
@@ -135,12 +165,19 @@ public class Matrix{
      * @return an identity matrix of the specified size
      * @throws IllegalArgumentException if {@code dimension} is negative or zero
      */
-    public static Matrix identityMatrix(int dimension){
-        Matrix matrix=new Matrix(dimension,dimension);
+    public static Matrix generateIdentityMatrix(int dimension){
+        /*
+         Note: even though this pretty much does the same thing as generateDiagonalMatrix(), it
+         would be inefficient to call it from this method. This is because this method would have
+         to create an array of n 1's (this runs in O(n) time) and then call
+         generateDiagonalMatrix() (which runs in O(n) time), so this whole method would run in
+         O(2n).
+         */
+        Matrix newMatrix=new Matrix(dimension,dimension);
         for(int i=0;i<dimension;i++){
-            matrix.matrixArray[i][i]=1;
+            newMatrix.matrixArray[i][i]=1;
         }
-        return matrix;
+        return newMatrix;
     }
 
 //--Getters and Setters--//
@@ -155,9 +192,19 @@ public class Matrix{
         return matrixArray[row][column];
     }
 
+    /**
+     * Returns an array of the entries in the row at the passed index
+     * @param index the row at this index will be returned as an array
+     * @return an array of the entries in the row at the passed index
+     */
     public int[] getRow(int index){
-        return matrixArray[index];
+        return Arrays.copyOf(matrixArray[index],matrixArray[index].length);
     }
+    /**
+     * Returns an array of the entries in the column at the passed index
+     * @param index the column at this index will be returned as an array
+     * @return an array of the entries in the column at the passed index
+     */
     public int[] getColumn(int index){
         int[] column=new int[AMOUNT_OF_COLUMNS];
         for(int i=0;i<AMOUNT_OF_ROWS;i++){
@@ -220,7 +267,7 @@ public class Matrix{
         StringBuilder toString=new StringBuilder();
         for(int[] row:matrixArray){
             for(int i=0;i<row.length;i++){
-                toString.append(row[i]).append((IS_AUGMENTED && AUGMENT_INDEX == i)? "|":" ");
+                toString.append((IS_AUGMENTED && AUGMENT_INDEX == i)? "|":" ").append(row[i]);
             }
             toString.append('\n');
         }
@@ -250,7 +297,7 @@ public class Matrix{
     /**
      * Sets every entry in this Matrix to a random integer
      */
-    public void randomizeEntries(){
+    private void randomizeEntries(){
         final int MAX_VALUE=20;
         for(int row=0;row<AMOUNT_OF_ROWS;row++){
             for(int column=0;column<AMOUNT_OF_COLUMNS;column++){
@@ -273,9 +320,18 @@ public class Matrix{
         return (int)(Math.round(Math.random()*(max-min)) + min);
     }
 
-    public void solveWithGaussianElimination(){
-        createPivots();
-        clearColumns();
+    /**
+     * Solves this matrix using Gaussian Elimination and returns the reduced matrix.<br />
+     * "In mathematics, Gaussian elimination, also known as row reduction, is an algorithm for
+     * solving systems of linear equations. It consists of a sequence of row-wise operations
+     * performed on the corresponding matrix of coefficients." - Wikipedia
+     * @return
+     */
+    public Matrix solveWithGaussianElimination(){
+        Matrix newMatrix=new Matrix(this);
+        newMatrix.createPivots();
+        newMatrix.clearColumns();
+        return newMatrix;
     }
 
     private void createPivots(){
@@ -368,15 +424,102 @@ public class Matrix{
         return newMatrix;
     }
 
-    public Matrix inverse(){
-        // TODO: implement this
-        throw new UnsupportedOperationException();
+    public Matrix inverse() throws UninvertibleMatrixException{
+        if(!isSquare()){
+            throw new UninvertibleMatrixException("Only square matrices can be inverted.");
+        }
+        try{
+            return this.augmentedWith(generateIdentityMatrix(AMOUNT_OF_ROWS))
+                    .solveWithGaussianElimination()
+                    .augmentation();
+        }
+        catch(IncompatibleMatrixAugmentationException e){
+            // this is impossible
+            throw new UninvertibleMatrixException();
+        }
+    }
+
+    public Matrix augmentation(){
+        if(!isAugmented()){
+            return null; //maybe throw an exception
+        }
+        return submatrix(0,AUGMENT_INDEX,AMOUNT_OF_ROWS,AMOUNT_OF_COLUMNS);
+    }
+
+    /**
+     * Return a matrix whose entries are from a subsection of this matrix.
+     * TODO: finish documenting this
+     * @param startingRow
+     * @param startingColumn
+     * @param endingRow
+     * @param endingColumn
+     * @return
+     */
+    public Matrix submatrix(int startingRow,int startingColumn,int endingRow,int endingColumn){
+        if(endingRow<startingRow){
+            throw new IllegalArgumentException("endingRow index cannot be less than startingRow");
+        }
+        if(endingColumn<startingColumn){
+            throw new IllegalArgumentException("endingColumn index cannot be less than startingColumn");
+        }
+        if((startingRow<0) || (startingColumn<0)){
+            throw new IllegalArgumentException(("All indexes must be non-negative"));
+        }
+
+        int[][] newMatrixArray=new int[(endingRow-startingRow)][(endingColumn-startingColumn)];
+        for(int x=0;x<newMatrixArray.length;x++){
+            System.arraycopy(
+                this.matrixArray[(x+startingRow)],
+                startingColumn,
+                newMatrixArray[x],
+                0,
+                newMatrixArray[0].length
+            );
+        }
+        return new Matrix(newMatrixArray);
+    }
+
+    public Matrix submatrix(int startingRow,int startingColumn){
+        return submatrix(startingRow,startingColumn,AMOUNT_OF_ROWS,AMOUNT_OF_COLUMNS);
+    }
+
+    /**
+     * Creates and returns a new matrix whose main matrix is this matrix, and whose augmentation
+     * is another matrix.
+     * @param augmentation the matrix which will be set as the augmentation of the new matrix
+     * @return a new matrix whose main matrix is this matrix, and whose augmentation is another
+     * matrix
+     * @throws IncompatibleMatrixAugmentationException if this matrix and the augmentation have
+     * different amounts of rows
+     */
+    public Matrix augmentedWith(Matrix augmentation) throws IncompatibleMatrixAugmentationException{
+        if(this.AMOUNT_OF_ROWS!=augmentation.AMOUNT_OF_ROWS){
+            throw new IncompatibleMatrixAugmentationException(this,augmentation);
+        }
+
+        Matrix newMatrix=new Matrix(AMOUNT_OF_ROWS,
+                (AMOUNT_OF_COLUMNS+augmentation.AMOUNT_OF_COLUMNS),
+                AMOUNT_OF_COLUMNS
+        );
+
+        for(int y=0;y<AMOUNT_OF_ROWS;y++){
+            for(int x=0;x<AMOUNT_OF_COLUMNS;x++){
+                // this loop iterates through the columns of this matrix
+                newMatrix.matrixArray[x][y]=this.matrixArray[x][y];
+            }
+            for(int x=0;x<AMOUNT_OF_COLUMNS;x++){
+                // this loop iterates through the columns of the augmentation
+                newMatrix.matrixArray[x][(y+AMOUNT_OF_COLUMNS)]=augmentation.matrixArray[x][y];
+            }
+        }
+
+        return newMatrix;
     }
 
     /**
      * Creates and returns the transpose of this matrix. The transpose of a matrix is a matrix
      * whose columns match the rows of that matrix.
-     * @return
+     * @return the transpose of this matrix
      */
     public Matrix transpose(){
         Matrix newMatrix=new Matrix(AMOUNT_OF_COLUMNS,AMOUNT_OF_ROWS);
