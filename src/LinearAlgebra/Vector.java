@@ -1,5 +1,8 @@
 package LinearAlgebra;
 
+import LinearAlgebra.Exceptions.IncompatibleMatrixMultiplicationException;
+import LinearAlgebra.Exceptions.IncompatibleVectorMultiplicationException;
+
 /**
  * A vector is defined as a Matrix with one column.
  *
@@ -12,7 +15,7 @@ public class Vector extends Matrix{
      * @param entries the values of the entries that will be in the vector. The entries should be
      *               put in order of top to bottom.
      */
-    public Vector(int... entries){
+    public Vector(double... entries){
         super(entries.length,1);
         for(int i=0;i<entries.length;i++){
             matrixArray[i][0]=entries[i];
@@ -31,8 +34,8 @@ public class Vector extends Matrix{
      * @param index the index at which to find the entry
      * @return the entry at the passed index
      */
-    public int getEntry(int index){
-        return matrixArray[index][0];
+    public double getEntry(int index){
+        return getEntry(index,0);
     }
 
     /**
@@ -40,8 +43,8 @@ public class Vector extends Matrix{
      * @return the length of this vector
      */
     public double length(){
-        int sumOfSquares=0;
-        for(int entry:matrixArray[0]){
+        double sumOfSquares=0;
+        for(double entry:matrixArray[0]){
             sumOfSquares=entry*entry;
         }
         return Math.sqrt(sumOfSquares);
@@ -54,35 +57,55 @@ public class Vector extends Matrix{
      * @return true if the vectors are orthogonal, or false otherwise.
      */
     public boolean isOrthogonalTo(Vector vector){
-        return (dotProduct(vector)==0);
+        try{
+            return (dotProduct(vector)==0);
+        }catch(IncompatibleVectorMultiplicationException e){
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * @param vector the vector with which to multiply this vector
      * @return the dot product of this vector and the passed vector.
      */
-    public int dotProduct(Vector vector){
-        if(this.AMOUNT_OF_ROWS!= vector.AMOUNT_OF_ROWS){
+    public double dotProduct(Vector vector) throws IncompatibleVectorMultiplicationException{
+        /*if(this.AMOUNT_OF_ROWS!=vector.AMOUNT_OF_ROWS){
             throw new IllegalArgumentException("Two vectors can only be multiplied if they have " +
                     "the same dimension");
         }
-        int sum=0;
+        double sum=0;
         for(int i=0;i<vector.AMOUNT_OF_ROWS;i++){
             sum+=this.getEntry(i)*vector.getEntry(i);
         }
-        return sum;
+
+        return sum;*/
+
+        try{
+            return(this.transpose().dotProduct(vector)).getEntry(0,0);
+        }
+        catch(IncompatibleMatrixMultiplicationException e){
+            throw new IncompatibleVectorMultiplicationException(e);
+        }
     }
 
     /**
      * @return an array with all the entries in this vector from top to bottom
      */
-    public int[] asArray(){
-        int[] array=new int[this.AMOUNT_OF_ROWS];
+    public double[] asArray(){
+        double[] array=new double[this.AMOUNT_OF_ROWS];
         for(int i=0;i<array.length;i++){
             array[i]=getEntry(i);
         }
         return array;
     }
 
-    // TODO: make a method that calculates and returns a projection onto another Vector
+    // TODO: document this
+    public Vector projectionOnto(Vector otherVector){
+        return new Vector(
+            otherVector.scaledBy(
+                this.dotProduct(otherVector) /
+                otherVector.dotProduct(otherVector)
+            ).getColumn(0)
+        );
+    }
 }

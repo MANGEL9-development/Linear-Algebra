@@ -24,19 +24,19 @@ public class testDriver{
     }
 
     private static void test2DArrayConstructor(){
-        Matrix matrix=new Matrix(new int[][]{
-                new int[]{1, 2, 3, 4, 5},
-                new int[]{6, 7, 8, 9, 10},
-                new int[]{11,12,13,14,15}
+        Matrix matrix=new Matrix(new double[][]{
+                new double[]{1, 2, 3, 4, 5},
+                new double[]{6, 7, 8, 9, 10},
+                new double[]{11,12,13,14,15}
         });
         System.out.println(matrix);
     }
 
     private static void testSwappingRows(){
-        Matrix matrix=new Matrix(new int[][]{
-                new int[]{1, 2, 3, 4, 5},
-                new int[]{6, 7, 8, 9, 10},
-                new int[]{11,12,13,14,15}
+        Matrix matrix=new Matrix(new double[][]{
+                new double[]{1, 2, 3, 4, 5},
+                new double[]{6, 7, 8, 9, 10},
+                new double[]{11,12,13,14,15}
         });
         System.out.println("Original Matrix:\n"+matrix);
         System.out.println("Matrix with second and third rows swapped:\n"+matrix.swapRows(1,2));
@@ -58,10 +58,10 @@ public class testDriver{
     }
 
     private static void testSubmatrix(){
-        Matrix matrix=new Matrix(new int[][]{
-                new int[]{1, 2, 3, 4, 5},
-                new int[]{6, 7, 8, 9, 10},
-                new int[]{11,12,13,14,15}
+        Matrix matrix=new Matrix(new double[][]{
+                new double[]{1, 2, 3, 4, 5},
+                new double[]{6, 7, 8, 9, 10},
+                new double[]{11,12,13,14,15}
         });
         System.out.println(matrix.submatrix(1,1,3,5));
     }

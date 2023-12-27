@@ -18,7 +18,7 @@ public class Matrix{
 
     /** This array contains the entire matrix. The first dimension represents the rows, and the
      * second dimension represents the columns. */
-    protected final int[][] matrixArray;
+    protected final double[][] matrixArray;
     /** This is true if the matrix is augmented, or false otherwise. */
     private final boolean IS_AUGMENTED;
     /** This is the index at which the augmentation begins. This is -1 if the matrix is not
@@ -28,6 +28,10 @@ public class Matrix{
     public final int AMOUNT_OF_ROWS;
     /** This holds how many columns are in the matrix. */
     public final int AMOUNT_OF_COLUMNS;
+
+    /** Any unaugmented matrix should have this value as its augment index. */
+    // If this value is changed, fix the documentation for AUGMENT_INDEX.
+    private static final int DEFAULT_AUGMENT_INDEX=-1;
 
 //--Constructors--//
 
@@ -42,8 +46,8 @@ public class Matrix{
             throw new IllegalArgumentException("Matrix must have positive, nonzero dimensions");
         }
 
-        matrixArray=new int[rows][columns];
-        AUGMENT_INDEX=-1;
+        matrixArray=new double[rows][columns];
+        AUGMENT_INDEX=DEFAULT_AUGMENT_INDEX;
         IS_AUGMENTED=isAugmented();
         AMOUNT_OF_ROWS=rows;
         AMOUNT_OF_COLUMNS=columns;
@@ -54,20 +58,27 @@ public class Matrix{
      * @param rows the amount of rows in the matrix
      * @param columns the amount of columns in the matrix
      * @param augmentIndex the index after which the augmentation begins
+     * @throws IllegalArgumentException if {@code rows} or {@code columns} is 0 or negative
      */
     public Matrix(int rows, int columns, int augmentIndex){
         if(rows<1 || columns<1){
             throw new IllegalArgumentException("Matrix must have positive, nonzero dimensions");
         }
-        matrixArray=new int[rows][columns];
+        matrixArray=new double[rows][columns];
         AUGMENT_INDEX=augmentIndex;
         IS_AUGMENTED=isAugmented();
         AMOUNT_OF_ROWS=rows;
         AMOUNT_OF_COLUMNS=columns;
     }
 
-    public Matrix(int[][] matrixArray){
-        if(Arrays.deepEquals(matrixArray,new int[][]{})){
+    /**
+     * Constructs a matrix out of a two-dimensional array.
+     * @param matrixArray the array from which this matrix is constructed
+     * @throws IllegalArgumentException if the passed array is empty
+     * @throws IllegalArgumentException if the rows of the array are of different lengths
+     */
+    public Matrix(double[][] matrixArray){
+        if(Arrays.deepEquals(matrixArray,new double[][]{})){
             throw new IllegalArgumentException("Matrix cannot be empty");
         }
         for(int i=0,length=matrixArray[0].length;i<matrixArray.length;i++){
@@ -77,7 +88,7 @@ public class Matrix{
             length=matrixArray[i].length;
         }
         this.matrixArray=matrixArray.clone();
-        AUGMENT_INDEX=-1;
+        AUGMENT_INDEX=DEFAULT_AUGMENT_INDEX;
         IS_AUGMENTED=isAugmented();
         AMOUNT_OF_ROWS=matrixArray.length;
         AMOUNT_OF_COLUMNS=matrixArray[0].length;
@@ -101,9 +112,9 @@ public class Matrix{
      * @throws IllegalArgumentException if the vectors do not all have the same height
      */
     public Matrix(Vector... vectors){
-        final int VECTOR0_HEIGHT=vectors[0].AMOUNT_OF_ROWS; // this is recorded to make sure that
-            // every vector has the same height
-        matrixArray=new int[VECTOR0_HEIGHT][vectors.length];
+        final int VECTOR0_HEIGHT=vectors[0].AMOUNT_OF_ROWS;
+            // this is recorded to make sure that every vector has the same height
+        matrixArray=new double[VECTOR0_HEIGHT][vectors.length];
         for(int i=0;i<vectors.length;i++){
             if(vectors[i].AMOUNT_OF_ROWS!=VECTOR0_HEIGHT){
                 throw new IllegalArgumentException("All vectors must have the same height");
@@ -112,7 +123,7 @@ public class Matrix{
                 matrixArray[j][i]=vectors[i].getEntry(j);
             }
         }
-        AUGMENT_INDEX=-1;
+        AUGMENT_INDEX=DEFAULT_AUGMENT_INDEX;
         IS_AUGMENTED=false;
         // TODO: create another constructor like this that allows for
         //  augmentation
@@ -127,9 +138,15 @@ public class Matrix{
      * @return a matrix of a given size where each entry is set to a random number
      */
     public static Matrix generateRandomMatrix(int rows,int columns){
-        Matrix newMatrix=new Matrix(rows,columns);
-        newMatrix.randomizeEntries();
-        return newMatrix;
+        double[][] matrix=new double[rows][columns];
+
+        final int MAX_VALUE=20;
+        for(int row=0;row<rows;row++){
+            for(int column=0;column<columns;column++){
+                matrix[row][column]=randomNumber(0,MAX_VALUE);
+            }
+        }
+        return new Matrix(matrix);
     }
 
     /**
@@ -138,12 +155,12 @@ public class Matrix{
      *                top-left corner and the last entry in the bottom-right corner
      * @return a diagonal matrix from the given entries
      */
-    public static Matrix generateDiagonalMatrix(int... entries){
-        Matrix newMatrix=new Matrix(entries.length,entries.length);
+    public static Matrix generateDiagonalMatrix(double... entries){
+        double[][] matrix=new double[entries.length][entries.length];
         for(int i=0;i<entries.length;i++){
-            newMatrix.matrixArray[i][i]=entries[i];
+            matrix[i][i]=entries[i];
         }
-        return newMatrix;
+        return new Matrix(matrix);
     }
 
     /**
@@ -188,7 +205,7 @@ public class Matrix{
      * @param column the column in which to find the entry
      * @return the entry at the passed row and column
      */
-    public int getEntry(int row,int column){
+    public double getEntry(int row,int column){
         return matrixArray[row][column];
     }
 
@@ -197,7 +214,7 @@ public class Matrix{
      * @param index the row at this index will be returned as an array
      * @return an array of the entries in the row at the passed index
      */
-    public int[] getRow(int index){
+    public double[] getRow(int index){
         return Arrays.copyOf(matrixArray[index],matrixArray[index].length);
     }
     /**
@@ -205,8 +222,8 @@ public class Matrix{
      * @param index the column at this index will be returned as an array
      * @return an array of the entries in the column at the passed index
      */
-    public int[] getColumn(int index){
-        int[] column=new int[AMOUNT_OF_COLUMNS];
+    public double[] getColumn(int index){
+        double[] column=new double[AMOUNT_OF_COLUMNS];
         for(int i=0;i<AMOUNT_OF_ROWS;i++){
             column[i]=matrixArray[i][index];
         }
@@ -217,7 +234,7 @@ public class Matrix{
      * @return true if this Matrix is augmented, or false otherwise
      */
     public boolean isAugmented(){
-        return (AUGMENT_INDEX!=-1);
+        return (AUGMENT_INDEX!=DEFAULT_AUGMENT_INDEX);
     }
 
     /**
@@ -226,7 +243,7 @@ public class Matrix{
      * @param row the row in which the new entry is to go
      * @param column the column in which the new entry is to go
      */
-    private void setEntry(int newValue,int row,int column){
+    private void _setEntry(double newValue,int row,int column){
         matrixArray[row][column]=newValue;
     }
 
@@ -265,7 +282,7 @@ public class Matrix{
     public String toString(){
         // TODO: make the matrix look cleaner
         StringBuilder toString=new StringBuilder();
-        for(int[] row:matrixArray){
+        for(double[] row:matrixArray){
             for(int i=0;i<row.length;i++){
                 toString.append((IS_AUGMENTED && AUGMENT_INDEX == i)? "|":" ").append(row[i]);
             }
@@ -294,20 +311,9 @@ public class Matrix{
         return this.equals(this.transpose());
     }
 
-    /**
-     * Sets every entry in this Matrix to a random integer
-     */
-    private void randomizeEntries(){
-        final int MAX_VALUE=20;
-        for(int row=0;row<AMOUNT_OF_ROWS;row++){
-            for(int column=0;column<AMOUNT_OF_COLUMNS;column++){
-                setEntry(randomNumber(0,MAX_VALUE),row,column);
-            }
-        }
-    }
-
-    public void randomizeEntriesToSolvableMatrix(){
+    public Matrix randomizeEntriesToSolvableMatrix(){
         // TODO: figure this out
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -317,6 +323,7 @@ public class Matrix{
      * @return a random integer between the passed min and max (inclusive)
      */
     private static int randomNumber(int min, int max){
+        // This might not have to be an int because this class was changed to be able to accept doubles
         return (int)(Math.round(Math.random()*(max-min)) + min);
     }
 
@@ -325,7 +332,7 @@ public class Matrix{
      * "In mathematics, Gaussian elimination, also known as row reduction, is an algorithm for
      * solving systems of linear equations. It consists of a sequence of row-wise operations
      * performed on the corresponding matrix of coefficients." - Wikipedia
-     * @return
+     * @return a congruent matrix that has been reduced using Gaussian Elimination
      */
     public Matrix solveWithGaussianElimination(){
         Matrix newMatrix=new Matrix(this);
@@ -374,7 +381,7 @@ public class Matrix{
     }
 
 
-    public int determinant() throws IndeterminableMatrixException{
+    public double determinant() throws IndeterminableMatrixException{
         if(!isSquare()){
             throw new IndeterminableMatrixException();
         }
@@ -383,7 +390,7 @@ public class Matrix{
             return ((matrixArray[0][0]*matrixArray[1][1])-(matrixArray[0][1]*matrixArray[1][0]));
         }
 
-        int sum=0;
+        double sum=0;
         for(int i=0;i<AMOUNT_OF_COLUMNS;i++){
             /* This method always determines from the top row. This can be changed if a more
             efficient way is found. */
@@ -466,7 +473,7 @@ public class Matrix{
             throw new IllegalArgumentException(("All indexes must be non-negative"));
         }
 
-        int[][] newMatrixArray=new int[(endingRow-startingRow)][(endingColumn-startingColumn)];
+        double[][] newMatrixArray=new double[(endingRow-startingRow)][(endingColumn-startingColumn)];
         for(int x=0;x<newMatrixArray.length;x++){
             System.arraycopy(
                 this.matrixArray[(x+startingRow)],
@@ -572,40 +579,53 @@ public class Matrix{
         return newMatrix;
     }
 
-    public Matrix crossMultiplyBy(Matrix matrix) throws IncompatibleMatrixMultiplicationException{
+    public Matrix dotProduct(Matrix matrix) throws IncompatibleMatrixMultiplicationException{
         if(!matricesCanBeMultiplied(this,matrix)){
             throw new IncompatibleMatrixMultiplicationException(this,matrix);
         }
-        Matrix product=new Matrix(this.AMOUNT_OF_ROWS,matrix.AMOUNT_OF_COLUMNS);
+        final int rows=this.AMOUNT_OF_ROWS;
+        final int columns=matrix.AMOUNT_OF_COLUMNS;
+        double[][] product=new double[rows][columns];
 
-        for(int row=0;row<product.AMOUNT_OF_ROWS;row++){
-            for(int column=0;column<product.AMOUNT_OF_COLUMNS;column++){
-                product.setEntry(rowColumnProduct(this,row,matrix,column),row,column);
+        for(int row=0;row<rows;row++){
+            for(int column=0;column<columns;column++){
+                product[row][column]=rowColumnProduct(this,row,matrix,column);
             }
         }
 
-        return product;
+        return new Matrix(product);
     }
 
     /**
      * Multiplies the entries in the <i>row</i>th row of <code>matrix1</code> by the entries in
-     * the <i>column</i>th column of <code>matrix1</code>
-     * @param matrix1
-     * @param row
-     * @param matrix2
-     * @param column
-     * @return the value of
+     * the <i>column</i>th column of <code>matrix2</code>
+     * @param matrix1 the first matrix in the multiplication
+     * @param row the index of the row from {@code matrix1} that is to be multiplied
+     * @param matrix2 the second matrix in the multiplication
+     * @param column the index of the column from {@code matrix2} that is to be multiplied
+     * @return the dot product of the <i>row</i>th row of <code>matrix1</code> and the
+     * <i>column</i>th column of <code>matrix2</code>
      */
-    private int rowColumnProduct(Matrix matrix1,int row,Matrix matrix2,int column){
+    private double rowColumnProduct(Matrix matrix1,int row,Matrix matrix2,int column){
         //maybe verify that the two matrices can be multiplied
         //this might not be needed because this method should only be accessed by other methods
         // that should already verify this
 
-        int sum=0;
+        double sum=0;
         for(int i=0;i<matrix1.AMOUNT_OF_COLUMNS;i++){
             sum+=(matrix1.getEntry(row,i)*matrix2.getEntry(i,column));
         }
         return sum;
+    }
+
+    public Matrix scaledBy(double scalar){
+        Matrix newMatrix=new Matrix(this);
+        for(int i=0;i<AMOUNT_OF_ROWS;i++){
+            for(int j=0;j<AMOUNT_OF_COLUMNS;j++){
+                newMatrix.matrixArray[i][j]*=scalar;
+            }
+        }
+        return newMatrix;
     }
 
     private static boolean matricesCanBeMultiplied(Matrix matrix1,Matrix matrix2){
@@ -627,13 +647,13 @@ public class Matrix{
      * {@code index2}
      * @param index1 the index of the row that is to be swapped with the row at {@code index2}
      * @param index2 the index of the row that is to be swapped with the row at {@code index1}
-     * @returna new matrix with the row at {@code index1} swapped with the row at {@code index2}
+     * @return a new matrix with the row at {@code index1} swapped with the row at {@code index2}
      */
     public Matrix swapRows(int index1,int index2){
         Matrix newMatrix=new Matrix(this);
-        int[] row1=newMatrix.matrixArray[index1];
-        int[] row2=newMatrix.matrixArray[index2];
-        int[] temp=row2;
+        double[] row1=newMatrix.matrixArray[index1];
+        double[] row2=newMatrix.matrixArray[index2];
+        double[] temp=row2;
 
         row2=row1;
         row1=temp;

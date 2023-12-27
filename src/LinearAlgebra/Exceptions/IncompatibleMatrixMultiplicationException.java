@@ -10,6 +10,10 @@ import LinearAlgebra.Matrix;
  */
 public class IncompatibleMatrixMultiplicationException extends Exception{
     //Maybe make this a runtime exception
+
+    protected Matrix matrix1;
+    protected Matrix matrix2;
+
     /**
      * Constructs an IncompatibleMatrixMultiplicationException
      */
@@ -32,5 +36,7 @@ public class IncompatibleMatrixMultiplicationException extends Exception{
                 matrix2.getDimensions()+" matrix. The amount of columns in the first matrix must " +
                 "match the amount of rows in the second matrix"
         );
+        this.matrix1=matrix1;
+        this.matrix2=matrix2;
     }
 }
