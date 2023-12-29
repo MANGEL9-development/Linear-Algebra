@@ -69,17 +69,6 @@ public class Vector extends Matrix{
      * @return the dot product of this vector and the passed vector.
      */
     public double dotProduct(Vector vector) throws IncompatibleVectorMultiplicationException{
-        /*if(this.AMOUNT_OF_ROWS!=vector.AMOUNT_OF_ROWS){
-            throw new IllegalArgumentException("Two vectors can only be multiplied if they have " +
-                    "the same dimension");
-        }
-        double sum=0;
-        for(int i=0;i<vector.AMOUNT_OF_ROWS;i++){
-            sum+=this.getEntry(i)*vector.getEntry(i);
-        }
-
-        return sum;*/
-
         try{
             return(this.transpose().dotProduct(vector)).getEntry(0,0);
         }
@@ -99,8 +88,14 @@ public class Vector extends Matrix{
         return array;
     }
 
-    // TODO: document this
-    public Vector projectionOnto(Vector otherVector){
+    /**
+     * Calculates and returns a vector that is the projection of this vector and another vector.
+     * @param otherVector // TODO: finish documenting this
+     * @return a vector that is the projection of this vector and another vector
+     * @throws IncompatibleVectorMultiplicationException if this vector and the other vector are
+     * of different dimensions.
+     */
+    public Vector projectionOnto(Vector otherVector) throws IncompatibleVectorMultiplicationException{
         return new Vector(
             otherVector.scaledBy(
                 this.dotProduct(otherVector) /

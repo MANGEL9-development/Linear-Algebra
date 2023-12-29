@@ -42,15 +42,7 @@ public class Matrix{
      * @throws IllegalArgumentException if {@code rows} or {@code columns} is negative or zero
      */
     public Matrix(int rows, int columns){
-        if(rows<1 || columns<1){
-            throw new IllegalArgumentException("Matrix must have positive, nonzero dimensions");
-        }
-
-        matrixArray=new double[rows][columns];
-        AUGMENT_INDEX=DEFAULT_AUGMENT_INDEX;
-        IS_AUGMENTED=isAugmented();
-        AMOUNT_OF_ROWS=rows;
-        AMOUNT_OF_COLUMNS=columns;
+        this(rows,columns,DEFAULT_AUGMENT_INDEX);
     }
 
     /**
@@ -78,6 +70,10 @@ public class Matrix{
      * @throws IllegalArgumentException if the rows of the array are of different lengths
      */
     public Matrix(double[][] matrixArray){
+        this(matrixArray,DEFAULT_AUGMENT_INDEX);
+    }
+
+    public Matrix(double[][] matrixArray,int augmentIndex){
         if(Arrays.deepEquals(matrixArray,new double[][]{})){
             throw new IllegalArgumentException("Matrix cannot be empty");
         }
@@ -88,7 +84,7 @@ public class Matrix{
             length=matrixArray[i].length;
         }
         this.matrixArray=matrixArray.clone();
-        AUGMENT_INDEX=DEFAULT_AUGMENT_INDEX;
+        AUGMENT_INDEX=augmentIndex;
         IS_AUGMENTED=isAugmented();
         AMOUNT_OF_ROWS=matrixArray.length;
         AMOUNT_OF_COLUMNS=matrixArray[0].length;
@@ -103,7 +99,7 @@ public class Matrix{
         AUGMENT_INDEX=matrix.AUGMENT_INDEX;
         IS_AUGMENTED=matrix.isAugmented();
         AMOUNT_OF_ROWS=matrix.AMOUNT_OF_ROWS;
-        AMOUNT_OF_COLUMNS=matrix.AMOUNT_OF_ROWS;
+        AMOUNT_OF_COLUMNS=matrix.AMOUNT_OF_COLUMNS;
     }
 
     /**
@@ -112,8 +108,12 @@ public class Matrix{
      * @throws IllegalArgumentException if the vectors do not all have the same height
      */
     public Matrix(Vector... vectors){
-        final int VECTOR0_HEIGHT=vectors[0].AMOUNT_OF_ROWS;
-            // this is recorded to make sure that every vector has the same height
+        this(DEFAULT_AUGMENT_INDEX,vectors);
+    }
+
+    public Matrix(int augmentIndex,Vector... vectors){
+        final int VECTOR0_HEIGHT=vectors[0].AMOUNT_OF_ROWS; // this is recorded to make sure that
+                                                            // every vector has the same height
         matrixArray=new double[VECTOR0_HEIGHT][vectors.length];
         for(int i=0;i<vectors.length;i++){
             if(vectors[i].AMOUNT_OF_ROWS!=VECTOR0_HEIGHT){
@@ -123,8 +123,8 @@ public class Matrix{
                 matrixArray[j][i]=vectors[i].getEntry(j);
             }
         }
-        AUGMENT_INDEX=DEFAULT_AUGMENT_INDEX;
-        IS_AUGMENTED=false;
+        AUGMENT_INDEX=augmentIndex;
+        IS_AUGMENTED=(AUGMENT_INDEX!=DEFAULT_AUGMENT_INDEX);
         // TODO: create another constructor like this that allows for
         //  augmentation
         AMOUNT_OF_ROWS=VECTOR0_HEIGHT;
@@ -190,11 +190,12 @@ public class Matrix{
          generateDiagonalMatrix() (which runs in O(n) time), so this whole method would run in
          O(2n).
          */
-        Matrix newMatrix=new Matrix(dimension,dimension);
+        double[][] identityMatrixArray=new double[dimension][dimension];
+
         for(int i=0;i<dimension;i++){
-            newMatrix.matrixArray[i][i]=1;
+            identityMatrixArray[i][i]=1.0;
         }
-        return newMatrix;
+        return new Matrix(identityMatrixArray);
     }
 
 //--Getters and Setters--//
@@ -231,6 +232,19 @@ public class Matrix{
     }
 
     /**
+     * @return the amount of rows in this matrix
+     */
+    public int getAmountOfRows(){
+        return AMOUNT_OF_ROWS;
+    }
+    /**
+     * @return the amount of columns in this matrix
+     */
+    public int getAmountOfColumns(){
+        return AMOUNT_OF_COLUMNS;
+    }
+
+    /**
      * @return true if this Matrix is augmented, or false otherwise
      */
     public boolean isAugmented(){
@@ -242,7 +256,9 @@ public class Matrix{
      * @param newValue the new value to be in the specified row and column.
      * @param row the row in which the new entry is to go
      * @param column the column in which the new entry is to go
+     * @deprecated This class is immutable, so this will become useless
      */
+    @Deprecated
     private void _setEntry(double newValue,int row,int column){
         matrixArray[row][column]=newValue;
     }
@@ -336,30 +352,54 @@ public class Matrix{
      */
     public Matrix solveWithGaussianElimination(){
         Matrix newMatrix=new Matrix(this);
-        newMatrix.createPivots();
-        newMatrix.clearColumns();
+        newMatrix=newMatrix.createPivots();
+        newMatrix=newMatrix.clearColumns();
         return newMatrix;
     }
 
-    private void createPivots(){
+    private Matrix createPivots(){
         int beginningIndexOfTrivialSolutions=AMOUNT_OF_ROWS;
+        // This represents the index of the first row, all of whose entries are 0
+
         /* When a row only has 0's, it is to be moved to the end by swapping it with the last
         non-trivial row */
-        // TODO: maybe write code to check to see if it's a good idea to swap rows
 
-        for(int i=0;i<AMOUNT_OF_ROWS;i++){
-            //TODO: finish this
-        }
+        Matrix newMatrix=new Matrix(this);
 
-        for(int row=0;row<AMOUNT_OF_ROWS;row++){
-            for(int column=0;column<row;column++){
+        rowIteration:for(int row=0;row<AMOUNT_OF_ROWS;row++){
+            for(int column=0;column<AMOUNT_OF_COLUMNS;column++){
                 if(matrixArray[row][column]!=0){
-                    makeEntryZero(row,column);
+                    // This loop is here to see if this row is only made of 0s. If a nonzero
+                    // entry is found, this loop can stop and the next row can be searched
+                    continue rowIteration;
                 }
             }
-            /* TODO: make first nonzero number in row 1 by multiplying that row by the reciprocal of
-                the first nonzero number */
+            // At this point, all entries in this row are found to be 0. This row can be
+            // swapped with another row
+            beginningIndexOfTrivialSolutions--;
+            newMatrix=newMatrix.swapRows(row,(beginningIndexOfTrivialSolutions-1));
         }
+
+        rowIteration:for(int row=0;row<beginningIndexOfTrivialSolutions;row++){
+            int column=0;
+            for(;column<row;column++){
+                if(matrixArray[row][column]!=0){
+                    newMatrix=newMatrix.makeEntryZero(row,column);
+                }
+            }
+            for(;column<AMOUNT_OF_COLUMNS;column++){
+                // Make first nonzero number in row 1 by multiplying that row by the reciprocal
+                // of the first nonzero number
+                double currentEntry=matrixArray[row][column];
+                System.err.println("("+row+","+column+") ~ "+AMOUNT_OF_COLUMNS);
+                if(currentEntry != 0){
+                    System.err.println("("+row+","+column+") - "+currentEntry);
+                    newMatrix=newMatrix.scaleRow(row,1.0/currentEntry);
+                    continue rowIteration;
+                }
+            }
+        }
+        return newMatrix;
     }
 /*
 
@@ -372,12 +412,80 @@ public class Matrix{
       row
 
  */
-    private void clearColumns(){
-        // TODO: implement this
+    private Matrix clearColumns(){
+        // go through every row
+        // using the first nonzero number (should be 1), add a multiple of this row to another
+        //   row (if that entry isn't already 0) to make it 0
+        Matrix newMatrix=new Matrix(this);
+        rowIteration:for(int row=(newMatrix.getAmountOfRows()-1);row>=0;row--){
+            for(int column=0;column<newMatrix.getAmountOfColumns();column++){
+                // maybe throw an exception if this isn't 1
+                if(newMatrix.getEntry(row,column)!=0){
+                    for(int row2=(row-1);row2>=0;row2--){
+                        if(newMatrix.getEntry(row2,column)!=0){
+                            double scale=
+                                -(
+                                    newMatrix.getEntry(row2,column)
+                                    /
+                                    newMatrix.getEntry(row,column)
+                                );
+                            addScaledOtherRow(row2,row,scale);
+                        }
+                    }
+                    continue rowIteration;
+                }
+            }
+        }
+
+        return newMatrix;
     }
 
-    private void makeEntryZero(int row, int column){
-        matrixArray[row][column]=0;
+    /**
+     * Makes an entry by adding its row to and the negative quotient of that entry and another
+     * entry on that column<br />
+     * For example, given two rows:<br />
+     * <code>
+     *     [2 8 4 6]<br />
+     *     [3 7 8 2],
+     * </code>
+     * The first entry in the second row can be made 0 by adding the second row to -3/2 of the
+     * first row. That will give this result:<br />
+     * <code>
+     *      [2  8 4  6]<br />
+     *      [0 -5 2 -7].
+     * </code>
+     * @param row the row in which the entry is found
+     * @param column the column in which the entry is found
+     * @return A new matrix in which the entry at ({@code row},{@code column}) is 0. Because this
+     * is achieved using a row operation, the rest of the row will be affected too
+     */
+    private Matrix makeEntryZero(int row, int column){
+        Matrix newMatrix=new Matrix(this);
+        for(int r=(row-1);r>=0;r--){
+            // Look for the first nonzero entry in this column. This is the entry that needs to be 0
+            if(newMatrix.getEntry(r,column)!=0){
+                double a=newMatrix.getEntry(row,column);
+                double b=newMatrix.getEntry(r,column);
+                double scale=(-(a/b));
+                return newMatrix.addScaledOtherRow(row,r,scale);
+            }
+        }
+        // If this point is reached, then the entry is already a pivot and does not need to made
+        // to zero. An exception might need to be thrown, as this method could possibly be used
+        // for other purposes besides creating pivots.
+        return this;
+    }
+
+    /**
+     * Increments a number, but increments the number again to avoid the avoided number. This is
+     * useful for "for" loops where the incrementer needs to skip a certain value.
+     * @param avoided the number that is to be avoided
+     * @param number the number that is to be incremented
+     * @return the next integer that is not the avoided number
+     * Note: this function might not be necessary
+     */
+    private int nextNumberThatIsNot(int avoided,int number){
+        return (++number==avoided)?number:++number;
     }
 
 
@@ -396,10 +504,10 @@ public class Matrix{
             efficient way is found. */
             Matrix subMatrix=this.removeRowAndColumn(0,i);
             sum+=(
-                    matrixArray[0][i] *
-                    subMatrix.determinant() *
-                    ((i%2==0)?1:-1)
-                 );
+                matrixArray[0][i] *
+                subMatrix.determinant() *
+                ((i%2==0)?1:-1)
+            );
         }
 
         return sum;// this should be the determinant
@@ -433,7 +541,7 @@ public class Matrix{
 
     public Matrix inverse() throws UninvertibleMatrixException{
         if(!isSquare()){
-            throw new UninvertibleMatrixException("Only square matrices can be inverted.");
+            throw new UninvertibleMatrixException(this);
         }
         try{
             return this.augmentedWith(generateIdentityMatrix(AMOUNT_OF_ROWS))
@@ -593,7 +701,7 @@ public class Matrix{
             }
         }
 
-        return new Matrix(product);
+        return new Matrix(product,AUGMENT_INDEX);
     }
 
     /**
@@ -670,17 +778,21 @@ public class Matrix{
      * @param factor the factor by which the row at the passed index is to be scaled
      * @return a new matrix in which the specified row is scaled by a factor.
      */
-    public Matrix scaleRow(int rowIndex,int factor){
+    public Matrix scaleRow(int rowIndex,double factor){
         Matrix newMatrix=new Matrix(this);
         for(int i=0;i<AMOUNT_OF_COLUMNS;i++){
             newMatrix.matrixArray[rowIndex][i]*=factor;
         }
         return newMatrix;
     }
+
+    // TODO: document this
+    public Matrix addScaledOtherRow(int row, int otherRow, double scale){
+        double[][] newMatrix=matrixArray.clone();
+        for(int column=0;column<AMOUNT_OF_COLUMNS;column++){
+            newMatrix[row][column]+=(newMatrix[otherRow][column]*scale);
+        }
+        return new Matrix(newMatrix,AUGMENT_INDEX);
+    }
+
 }
-
-/*
-    Future Goals:
-        - Make this class support entries as doubles instead of just integers
-
- */

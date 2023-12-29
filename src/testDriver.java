@@ -1,5 +1,6 @@
 import LinearAlgebra.Exceptions.IncompatibleMatrixAugmentationException;
 import LinearAlgebra.Exceptions.IndeterminableMatrixException;
+import LinearAlgebra.Exceptions.UninvertibleMatrixException;
 import LinearAlgebra.Matrix;
 import LinearAlgebra.Vector;
 
@@ -9,7 +10,7 @@ import LinearAlgebra.Vector;
  */
 public class testDriver{
     public static void main(String[] args){
-        testSubmatrix();
+        testInverse();
     }
 
     private static void testDeterminant(){
@@ -53,7 +54,7 @@ public class testDriver{
             );
         }
         catch(IncompatibleMatrixAugmentationException e){
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 
@@ -64,5 +65,27 @@ public class testDriver{
                 new double[]{11,12,13,14,15}
         });
         System.out.println(matrix.submatrix(1,1,3,5));
+    }
+
+    private static void testPivots(){
+        Matrix matrix=new Matrix(new double[][]{
+                new double[]{1, 2, 3, 4, 5},
+                new double[]{6, 7, 8, 9, 10},
+                new double[]{11,13,12,14,15}
+        });
+        System.out.println(matrix.solveWithGaussianElimination());
+    }
+
+    private static void testInverse(){
+        Matrix matrix=new Matrix(new double[][]{
+                new double[]{1, 2, 3},
+                new double[]{6, 7, 8},
+                new double[]{11,13,12}
+        });
+        try{
+            System.out.println(matrix.inverse());
+        }catch(UninvertibleMatrixException e){
+            e.printStackTrace(System.err);
+        }
     }
 }
